@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local state (never commit)
+*.log
+*.state
+.model_manager_state
+.hermes_mobile_state
+.hermes_mobile.log
+.hermes_mobile_boot.log
+llama-server.log
+mobile_routing_log.json
+
+# Secrets (should never be in repo)
+*.pem
+*.key
+.env
+config.yaml
