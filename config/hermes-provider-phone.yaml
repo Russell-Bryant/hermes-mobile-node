@@ -9,12 +9,12 @@
 #   cfg['providers']['phone'] = {
 #       'base_url': 'http://127.0.0.1:18081/v1',
 #       'api_key': 'phone-local',
-#       'model': 'nvidia/NVIDIA-Nemotron3-Nano-4B-Q4_K_M',
+#       'model': 'Qwen3-4B-Q4_K_M',
 #       'context_length': 4096
 #   }
 #   cfg.setdefault('model_catalog', {}).setdefault('providers', {})['phone'] = {
 #       'base_url': 'http://127.0.0.1:18081/v1',
-#       'models': ['nvidia/NVIDIA-Nemotron3-Nano-4B-Q4_K_M']
+#       'models': ['Qwen3-4B-Q4_K_M']
 #   }
 #   with open('/home/YOUR_USER/.hermes/config.yaml', 'w') as f:
 #       yaml.dump(cfg, f, default_flow_style=False)
@@ -26,7 +26,7 @@ providers:
   phone:
     base_url: http://127.0.0.1:18081/v1     # SSH tunnel to phone
     api_key: phone-local                      # Arbitrary (no auth on tunnel)
-    model: nvidia/NVIDIA-Nemotron3-Nano-4B-Q4_K_M
+    model: Qwen3-4B-Q4_K_M
     context_length: 4096
 
 # Also add to model_catalog for the slash command dropdown:
@@ -35,4 +35,4 @@ model_catalog:
     phone:
       base_url: http://127.0.0.1:18081/v1
       models:
-        - nvidia/NVIDIA-Nemotron3-Nano-4B-Q4_K_M
+        - Qwen3-4B-Q4_K_M

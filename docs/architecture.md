@@ -24,7 +24,7 @@ The Hermes Mobile Node extends a self-hosted AI agent (Hermes) with a phone-base
 │  │  model: qwen/qwen3.6-27b (LM Studio, primary)               │     │
 │  │  providers:                                                  │     │
 │  │    phone: http://127.0.0.1:18081/v1  ← SSH tunnel           │     │
-│  │  fallback: openrouter/owl-alpha                              │     │
+│  │  fallback: cloud API (frontier model)                              │     │
 │  └──────────┬──────────────────┬──────────────────┬─────────────┘     │
 │             │                  │                  │                    │
 │             │           ┌──────┴──────┐           │                    │
@@ -52,7 +52,7 @@ The Hermes Mobile Node extends a self-hosted AI agent (Hermes) with a phone-base
 │  LM Studio       │  │  ┌──────────────────────────────────────┐   │
 │  Qwen 27B       │  │  │         llama-server (:8081)          │   │
 │  port 1235      │  │  │                                       │   │
-│                  │  │  │  Model: Nemotron 3 Nano 4B Q4_K_M    │   │
+│                  │  │  │  Model: 3-4B class open-source model (e.g. Qwen 3-4B)   │   │
 │  Tier 1:        │  │  │  Context: 4096                        │   │
 │  PRIMARY        │  │  │  Backend: OpenCL (Adreno 830)         │   │
 │                  │  │  │  Threads: 6                           │   │
@@ -83,8 +83,9 @@ The Hermes Mobile Node extends a self-hosted AI agent (Hermes) with a phone-base
                                           │ (if both Tier 1 + 2 fail)
                                           ▼
                                ┌──────────────────┐
-                               │   OpenRouter     │
-                               │   OWL-Alpha      │
+                               │   Cloud API      │
+                               │   (frontier      │
+                               │    model)        │
                                │                  │
                                │   Tier 3: CLOUD  │
                                └──────────────────┘
@@ -103,8 +104,8 @@ The Hermes Mobile Node extends a self-hosted AI agent (Hermes) with a phone-base
       │                                     SSH tunnel: VPS:18081 → phone:8081
       │                                     or HTTP: phone:9192/cron/trigger
       │
-      └─ Phone unreachable ──→ Call OpenRouter API (Tier 3)
-                                Model: openrouter/owl-alpha
+      └─ Phone unreachable ──→ Call cloud API (Tier 3)
+                                Any frontier model via API
 ```
 
 ## SSH Tunnel Pattern
@@ -144,7 +145,7 @@ cron_relay.py checks workstation_health.py
        │                                  with job name + context
        │                                  (2000 char context limit)
        │
-       └─ Both down ──→ POST to OpenRouter API
+       └─ Both down ──→ POST to cloud API (frontier model)
                          with full system prompt
                          (no tool access, context-only)
 ```
@@ -159,10 +160,10 @@ Hermes Gateway receives message
        │
        ├─ Default model (LM Studio) ──→ Qwen 27B generates response
        │
-       ├─ User switches to phone model ──→ Nemotron 4B generates response
+       ├─ User switches to phone model ──→ 3-4B OSS model generates response
        │                                    via SSH tunnel
        │
-       └─ Fallback (if primary down) ──→ Phone or OpenRouter
+       └─ Fallback (if primary down) ──→ Phone or cloud API frontier model
 ```
 
 ## Phone Service Layer (hermes_mobile.py)
@@ -178,7 +179,7 @@ The phone runs a lightweight HTTP service that:
 
 The model manager handles RAM-constrained inference:
 
-- **Nemotron 4B** (~2.7GB) — default for cron jobs, light chat
+- **3-4B OSS model** (~2.7GB) — default for cron jobs, light chat
 - **Qwen 3.5 9B** (~5.3GB) — available for heavier tasks if RAM allows
 - Models are loaded on demand and unloaded when idle or when workstation comes back online
 

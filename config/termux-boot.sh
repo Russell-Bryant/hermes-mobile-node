@@ -26,7 +26,7 @@ echo "[$(date)] Starting llama-server..." >> /data/data/com.termux/files/home/.h
 screen -dmS llamaserve bash -c '
     export LD_LIBRARY_PATH=/vendor/lib64:/system_ext/lib64:/data/data/com.termux/files/usr/lib
     /data/data/com.termux/files/home/llama.cpp/build-opencl/bin/llama-server \
-        -m /data/data/com.termux/files/home/storage/shared/AI_Models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf \
+        -m /data/data/com.termux/files/home/storage/shared/AI_Models/Qwen3-4B-Q4_K_M.gguf \\
         -c 4096 \
         --host 127.0.0.1 \
         --port 8081 \

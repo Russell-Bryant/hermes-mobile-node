@@ -40,14 +40,14 @@ LOG_FILE = "/data/data/com.termux/files/home/.hermes_mobile.log"
 
 # Model server ports (managed by model_manager.sh)
 MODEL_PORTS = {
-    "nemotron": 8081,
+    "primary": 8081,
     "qwen": 8082,
 }
 
 # Which model to use for which job type
 JOB_MODEL_MAP = {
-    "cron": "nemotron",
-    "default": "nemotron",
+    "cron": "primary",
+    "default": "primary",
 }
 
 LOG_CONTEXT_BYTES = 2000  # max chars of context to pass to model
@@ -92,11 +92,11 @@ def check_workstation():
         return {"online": False, "run_local": True, "error": str(e)}
 
 
-def run_local_inference(prompt, model="nemotron", max_tokens=1024):
+def run_local_inference(prompt, model="primary", max_tokens=1024):
     """Send inference request to local llama-server."""
     import urllib.request
 
-    port = MODEL_PORTS.get(model, MODEL_PORTS["nemotron"])
+    port = MODEL_PORTS.get(model, MODEL_PORTS["primary"])
     url = f"http://127.0.0.1:{port}/v1/chat/completions"
 
     # Check if server is running
@@ -212,7 +212,7 @@ class MobileHandler(BaseHTTPRequestHandler):
             except Exception:
                 data = {}
             prompt = data.get("prompt", "")
-            model = data.get("model", "nemotron")
+            model = data.get("model", "primary")
             max_tokens = data.get("max_tokens", 1024)
 
             if not prompt:
@@ -244,7 +244,7 @@ class MobileHandler(BaseHTTPRequestHandler):
                 data = json.loads(body) if body else {}
             except Exception:
                 data = {}
-            model = data.get("model", "nemotron")
+            model = data.get("model", "primary")
 
             if model not in MODEL_PORTS:
                 self._respond(400, {"error": f"unknown model '{model}'"})

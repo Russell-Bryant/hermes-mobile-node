@@ -111,9 +111,9 @@ ssh -p 8022 YOUR_PHONE_TAILSCALE_IP "pkill -f llama-server; sleep 2"
 
 ssh -p 8022 YOUR_PHONE_TAILSCALE_IP "screen -dmS llamaserve bash -c '
   export LD_LIBRARY_PATH=/vendor/lib64:/system_ext/lib64:/data/data/com.termux/files/usr/lib
-  ~/llama.cpp/build-opencl/bin/llama-server \
-    -m ~/storage/shared/AI_Models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf \
-    -c 4096 --host 127.0.0.1 --port 8081 \
+  ~/llama.cpp/build-opencl/bin/llama-server \\
+    -m ~/storage/shared/AI_Models/Qwen3-4B-Q4_K_M.gguf \\
+    -c 4096 --host 127.0.0.1 --port 8081 \\
     --chat-template chatml -t 6 --gpu-layers 20
 '"
 
@@ -129,8 +129,8 @@ ssh -p 8022 YOUR_PHONE_TAILSCALE_IP "curl -s http://127.0.0.1:8081/health"
 ```bash
 # curl -C - resumes from where it left off
 curl -C - -L \
-  "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF/resolve/main/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf" \
-  -o ~/storage/shared/AI_Models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf
+  "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf" \
+  -o ~/storage/shared/AI_Models/Qwen3-4B-Q4_K_M.gguf
 ```
 
 **Note:** If the file is already complete, curl exits 0 with "Download complete". Verify with `stat -c%s` (exact bytes), not `ls -lh` (rounds down).
@@ -139,7 +139,7 @@ curl -C - -L \
 
 ```bash
 # Check GGUF magic number (first 4 bytes should be 0x47475546 = "GGUF")
-xxd -l 4 ~/storage/shared/AI_Models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf
+xxd -l 4 ~/storage/shared/AI_Models/Qwen3-4B-Q4_K_M.gguf
 # Expected output: 00000000: 4747 5546                                GGUF
 ```
 
@@ -151,7 +151,7 @@ If phone internet is slow or HuggingFace is blocked:
 # On VPS — download with Python
 python3 -c "
 import urllib.request
-url = 'https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF/resolve/main/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf'
+url = 'https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf'
 urllib.request.urlretrieve(url, '/tmp/model.gguf')
 "
 

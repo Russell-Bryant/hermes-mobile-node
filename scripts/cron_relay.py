@@ -5,7 +5,7 @@ cron_relay.py — VPS-side cron relay with three-tier fallback.
 Routing order:
     1. Workstation (LM Studio) — full Hermes tool access
     2. Mobile (Termux/llama.cpp) — lightweight local inference
-    3. OpenRouter (cloud API) — ultimate fallback, always available
+    3. Cloud API (frontier model) — ultimate fallback, always available
 
 Usage:
     python3 cron_relay.py --job <job_id>
@@ -26,9 +26,9 @@ MOBILE_PORT = 9192
 CRON_JOBS_FILE = os.path.expanduser("~/.hermes/cron/jobs.json")
 ROUTING_LOG = os.path.expanduser("~/.hermes/cron_state/mobile_routing_log.json")
 
-# OpenRouter fallback config
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "openrouter/auto"
+# Cloud API fallback config (any frontier model API — OpenRouter, etc.)
+CLOUD_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+CLOUD_API_MODEL = "openrouter/auto"
 
 # Phone hostname pattern for Tailscale discovery
 # Matches any peer whose hostname contains these strings (case-insensitive)
@@ -39,8 +39,9 @@ MOBILE_HOSTNAME_PATTERNS = ["phone", "mobile", "android", "nubia", "z70"]
 WORKSTATION_ONLY_JOBS = set()  # e.g., {"job_id_1", "job_id_2"}
 
 
-def _load_openrouter_key():
-    """Read OpenRouter API key from Hermes config or environment."""
+def _load_cloud_api_key():
+    """Read cloud API key from Hermes config or environment.
+    Checks OPENROUTER_API_KEY env var and 'openrouter:' provider in config.yaml."""
     key = os.environ.get("OPENROUTER_API_KEY", "")
     if key:
         return key
@@ -51,22 +52,22 @@ def _load_openrouter_key():
         try:
             with open(cfg_path) as f:
                 content = f.read()
-            in_openrouter = False
+            in_cloud = False
             for line in content.splitlines():
                 if line.strip().startswith("openrouter:") or line.strip().startswith("- openrouter:"):
-                    in_openrouter = True
+                    in_cloud = True
                     continue
-                if in_openrouter:
+                if in_cloud:
                     if line.strip().startswith("api_key:"):
                         return line.split(":", 1)[1].strip().strip('"').strip("'")
                     if line and not line.startswith(" ") and not line.startswith("\t"):
-                        in_openrouter = False
+                        in_cloud = False
         except Exception:
             pass
     return ""
 
 
-OPENROUTER_API_KEY = _load_openrouter_key()
+CLOUD_API_KEY = _load_cloud_api_key()
 
 
 def log(msg):
@@ -142,16 +143,16 @@ def forward_to_mobile(job_id, job_name, job_prompt):
         return False
 
 
-def run_via_openrouter(job_id, job_name, job_prompt):
-    """Run a cron job via OpenRouter API as ultimate fallback."""
-    if not OPENROUTER_API_KEY:
-        log("No OpenRouter API key — cannot use tier-3 fallback")
+def run_via_cloud_api(job_id, job_name, job_prompt):
+    """Run a cron job via cloud API (frontier model) as ultimate fallback."""
+    if not CLOUD_API_KEY:
+        log("No cloud API key — cannot use tier-3 fallback")
         return False
 
-    log(f"Running job '{job_name}' via OpenRouter")
+    log(f"Running job '{job_name}' via cloud API")
 
     payload = json.dumps({
-        "model": OPENROUTER_MODEL,
+        "model": CLOUD_API_MODEL,
         "messages": [
             {
                 "role": "system",
@@ -172,11 +173,11 @@ def run_via_openrouter(job_id, job_name, job_prompt):
     }).encode()
 
     req = urllib.request.Request(
-        OPENROUTER_URL,
+        CLOUD_API_URL,
         data=payload,
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Authorization": f"Bearer {CLOUD_API_KEY}",
             "HTTP-Referer": "https://github.com/YOUR_USERNAME/hermes-mobile-node",
             "X-Title": "Hermes Mobile Fallback",
         },
@@ -187,12 +188,12 @@ def run_via_openrouter(job_id, job_name, job_prompt):
         result = json.loads(resp.read().decode())
         content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-        log(f"OpenRouter response for '{job_name}': {content[:200]}...")
-        log_routing(job_id, job_name, "openrouter", True)
+        log(f"Cloud API response for '{job_name}': {content[:200]}...")
+        log_routing(job_id, job_name, "cloud_api", True)
         return True
     except Exception as e:
-        log(f"OpenRouter failed for '{job_name}': {e}")
-        log_routing(job_id, job_name, "openrouter", False, str(e))
+        log(f"Cloud API failed for '{job_name}': {e}")
+        log_routing(job_id, job_name, "cloud_api", False, str(e))
         return False
 
 
@@ -235,14 +236,14 @@ def main():
     if "--check" in sys.argv:
         ws = check_workstation()
         mobile_ip = get_mobile_ip()
-        router_key = bool(OPENROUTER_API_KEY)
+        router_key = bool(CLOUD_API_KEY)
 
         if ws:
             routing = "tier-1: workstation (local)"
         elif mobile_ip:
             routing = f"tier-2: mobile ({mobile_ip})"
         elif router_key:
-            routing = "tier-3: OpenRouter (cloud fallback)"
+            routing = "tier-3: cloud API (frontier model fallback)"
         else:
             routing = "all tiers unreachable"
 
@@ -250,7 +251,7 @@ def main():
             "workstation_online": ws,
             "mobile_ip": mobile_ip,
             "mobile_available": bool(mobile_ip),
-            "openrouter_configured": router_key,
+            "cloud_api_configured": router_key,
             "routing": routing,
         }, indent=2))
         return
@@ -284,7 +285,7 @@ def main():
             return
 
         if is_workstation_only and not ws_online:
-            log(f"Job '{job_name}' requires workstation — trying mobile then OpenRouter")
+            log(f"Job '{job_name}' requires workstation — trying mobile then cloud API")
 
         # Tier 2: Try mobile
         mobile_ip = get_mobile_ip()
@@ -295,17 +296,17 @@ def main():
                 return
             log(f"Mobile failed for '{job_name}' — trying next tier")
         else:
-            log(f"Workstation offline, no mobile — trying OpenRouter for '{job_name}'")
+            log(f"Workstation offline, no mobile — trying cloud API for '{job_name}'")
 
-        # Tier 3: OpenRouter
-        if OPENROUTER_API_KEY:
-            log(f"Falling back to OpenRouter for '{job_name}'")
-            success = run_via_openrouter(job_id, job_name, job_prompt)
+        # Tier 3: Cloud API
+        if CLOUD_API_KEY:
+            log(f"Falling back to cloud API for '{job_name}'")
+            success = run_via_cloud_api(job_id, job_name, job_prompt)
             if success:
                 return
-            log(f"OpenRouter also failed — job will be retried next cycle")
+            log(f"Cloud API also failed — job will be retried next cycle")
         else:
-            log(f"No OpenRouter key — job '{job_name}' skipped (all tiers unreachable)")
+            log(f"No cloud API key — job '{job_name}' skipped (all tiers unreachable)")
             log_routing(job_id, job_name, "skipped", False, "all_tiers_unreachable")
 
         sys.exit(1)

@@ -10,8 +10,8 @@
 #   model_manager.sh primary              # Load primary model (checks workstation first)
 #
 # Models:
-#   nemotron  — Nemotron 3 Nano 4B Q4_K_M for cron/classification
-#   qwen      — Qwen 3.5 9B Q4_K_M for general chat/reasoning
+#   primary  — 3-4B class open-source model (e.g. Qwen 3-4B) for cron/classification
+#   qwen     — Qwen 3.5 9B Q4_K_M for general chat/reasoning
 
 set -euo pipefail
 
@@ -28,33 +28,33 @@ VPS_HEALTH_URL="http://YOUR_VPS_TAILSCALE_IP:9191/mobile"
 # ─── Model Definitions ──────────────────────────────────────────────────────
 declare -A MODEL_PATHS
 MODEL_PATHS=(
-    ["nemotron"]="${MODEL_DIR}/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf"
+    ["primary"]="${MODEL_DIR}/Qwen3-4B-Q4_K_M.gguf"
     ["qwen"]="${MODEL_DIR}/Qwen3.5-9B-Q4_K_M.gguf"
 )
 
 # Model parameters — tune for your device
 declare -A MODEL_THREADS
 MODEL_THREADS=(
-    ["nemotron"]=6
+    ["primary"]=6
     ["qwen"]=6
 )
 
 declare -A MODEL_CTX
 MODEL_CTX=(
-    ["nemotron"]=4096
+    ["primary"]=4096
     ["qwen"]=4096
 )
 
 declare -A MODEL_NGL
 MODEL_NGL=(
-    ["nemotron"]=20
+    ["primary"]=20
     ["qwen"]=30
 )
 
 # Server ports — each model gets its own port
 declare -A MODEL_PORTS
 MODEL_PORTS=(
-    ["nemotron"]=8081
+    ["primary"]=8081
     ["qwen"]=8082
 )
 
@@ -212,7 +212,7 @@ load_primary() {
     fi
 
     log "Workstation OFFLINE — loading primary model for local inference"
-    load_model "nemotron"
+    load_model "primary"
 }
 
 show_status() {
@@ -257,7 +257,7 @@ case "${1:-help}" in
         ;;
     *)
         echo "Usage: $0 {load|unload|status|primary} [model]"
-        echo "  models: nemotron, qwen"
+        echo "  models: primary, qwen"
         echo ""
         echo "Commands:"
         echo "  load <model>    Load a model into RAM and start llama-server"
